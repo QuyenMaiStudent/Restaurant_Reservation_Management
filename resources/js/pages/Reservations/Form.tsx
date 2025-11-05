@@ -16,15 +16,23 @@ type Props = {
 
 function toInputDateTime(iso?: string) {
     if (!iso) return '';
-    // Convert ISO to "YYYY-MM-DDTHH:MM" for datetime-local input
-    const d = new Date(iso);
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const yyyy = d.getFullYear();
-    const mm = pad(d.getMonth() + 1);
-    const dd = pad(d.getDate());
-    const hh = pad(d.getHours());
-    const min = pad(d.getMinutes());
-    return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+    const s = iso.trim();
+
+    // Nếu có timezone rõ ràng (Z hoặc +HH:MM / -HH:MM) => parse và chuyển sang giờ local
+    if (/[zZ]$|[+\-]\d{2}:?\d{2}$/.test(s)) {
+        const d = new Date(s);
+        if (isNaN(d.getTime())) return '';
+        const pad = (n: number) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    // Không có timezone => coi như local. Hỗ trợ "YYYY-MM-DD HH:MM:SS" hoặc "YYYY-MM-DDTHH:MM"
+    const m = s.match(/^(\d{4}-\d{2}-\d{2})(?:[T ]?(\d{2}):(\d{2})(?::\d{2})?)?$/);
+    if (!m) return '';
+    const date = m[1];
+    const hh = m[2] ?? '00';
+    const mm = m[3] ?? '00';
+    return `${date}T${hh}:${mm}`;
 }
 
 export default function Form({ reservation }: Props) {
